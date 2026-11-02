@@ -1,10 +1,5 @@
 /**
  * Base API client for ContribIQ.
- *
- * Intentional bug: no 401 interceptor — when the access token expires,
- * API calls fail silently without redirecting to login.
- * Issue: API client has no 401 interceptor — expired tokens cause silent failures
- * Fix: if (res.status === 401) { clearTokens(); window.location.href = '/login' }
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
