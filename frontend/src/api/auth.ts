@@ -1,3 +1,5 @@
+import { apiCall } from './client'
+
 export interface LoginPayload {
   email: string
   password: string
@@ -9,22 +11,72 @@ export interface LoginResponse {
   user: { id: string; email: string; name: string }
 }
 
+interface BackendLoginResponse {
+  access_token: string
+  token_type: string
+  refresh_token: string
+}
+
+interface BackendUser {
+  id: string
+  email: string
+  name: string | null
+  github_username: string | null
+  avatar_url: string | null
+  created_at: string
+}
+
 export async function loginWithEmail(payload: LoginPayload): Promise<LoginResponse> {
-  await new Promise(r => setTimeout(r, 1600))
-  if (payload.email === 'fail@test.com') {
-    throw new Error('Invalid email or password. Please try again.')
-  }
+  const data = await apiCall<BackendLoginResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email: payload.email, password: payload.password }),
+  })
+
+  const me = await apiCall<BackendUser>('/auth/me', {
+    headers: { Authorization: `Bearer ${data.access_token}` },
+  })
+
   return {
-    token: 'mock-jwt-token',
-    user: { id: '1', email: payload.email, name: payload.email.split('@')[0] },
+    token: data.access_token,
+    user: {
+      id: me.id,
+      email: me.email,
+      name: me.name ?? me.email.split('@')[0],
+    },
+  }
+}
+
+export async function registerWithEmail(payload: {
+  email: string
+  password: string
+  name?: string
+}): Promise<LoginResponse> {
+  const me = await apiCall<BackendUser>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+  const loginData = await apiCall<BackendLoginResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email: payload.email, password: payload.password }),
+  })
+
+  return {
+    token: loginData.access_token,
+    user: {
+      id: me.id,
+      email: me.email,
+      name: me.name ?? me.email.split('@')[0],
+    },
   }
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
-  await new Promise(r => setTimeout(r, 800))
+  // TODO: implement password reset endpoint in backend (not yet available)
   console.log('Password reset requested for', email)
 }
 
 export function getGitHubOAuthUrl(): string {
-  return '#github-oauth'
+  const base = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+  return `${base}/auth/github/login`
 }
