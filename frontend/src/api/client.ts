@@ -20,13 +20,6 @@ export async function apiCall<T>(path: string, options: RequestInit = {}): Promi
     },
   })
 
-  // BUG: 401 not handled here — expired token causes silent failure
-  // Fix would be:
-  // if (res.status === 401) {
-  //   localStorage.removeItem('token'); sessionStorage.removeItem('token')
-  //   window.location.href = '/login'
-  // }
-
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     throw new Error((err as { detail?: string }).detail ?? `HTTP ${res.status}`)
