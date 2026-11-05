@@ -8,6 +8,13 @@ function getToken(): string | null {
   return localStorage.getItem('token') ?? sessionStorage.getItem('token')
 }
 
+function clearTokens(): void {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('user')
+}
+
 export async function apiCall<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken()
 
@@ -19,6 +26,12 @@ export async function apiCall<T>(path: string, options: RequestInit = {}): Promi
       ...options.headers,
     },
   })
+
+  if (res.status === 401) {
+    clearTokens()
+    window.location.href = '/login'
+    throw new Error('Session expired. Please log in again.')
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
